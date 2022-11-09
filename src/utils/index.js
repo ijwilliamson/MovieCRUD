@@ -80,46 +80,50 @@ class Movies{
 
     async modify(id, movie){
         //pass the complete movie object
-        let newMoview = movie;
         try {
             await this.connect();
-            let keys = Object.keys(movie)
-            let values = Object.values(movie)
+            
+            // remove any null or empty string keys from the object
+            // only key value pairs passed are updated, the rest
+            // remain unchanged
+            const keys = Object.keys(movie)
+            const values = Object.values(movie)
             let modifiedMovie = movie;
+
+            // loop through the values and remove the key from modifiedMovie
+            // if the value is falsy.
             for(let i=keys.length; i>=0; i--){
                 if (!values[i]){
                     let {[keys[i]]: unused, ...tempMovie} = modifiedMovie;
                     modifiedMovie = tempMovie;
                 }
             }
+            // remove the _id from the movie object if it exists
+            // as this should be immutable only and should not be updated
             delete modifiedMovie._id
 
+            // filtering on an auto Id requires the id string to be wrapped
+            // in a mongoDb ObjectId
             const filter = {_id: ObjectId(id)};
-            // const updateDoc = {
-            //     $set: {
-            //         title: (movie.title) ? movie.title : null,
-            //         actor: (movie.actor) ? movie.actor : null,
-            //         director: (movie.director) ? movie.director : null
-            //     }
-            // };
+            
             const updateDoc = {
                 $set: modifiedMovie
             }
 
-            
-            
-
             const result = await this.collection.updateOne(filter, updateDoc);
             console.log(result)
+
             await this.close();
+
             return (result.acknowledged) ? true : false;
+
         } catch (error) {
             console.log(error);
         }
     }
 
     async read(){
-        //pass a query to get results
+        //get all results
 
         try {
             await this.connect();
@@ -129,6 +133,50 @@ class Movies{
         } catch (error) {
             console.log(error);
         }
+    }
+
+    async readOne(id){
+         //get a single record using id
+
+         try {
+            await this.connect();
+            const data = await this.collection.find({_id: ObjectId(id)}).toArray();
+            await this.close();
+            return(data);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async search(movie){
+         //pass a query in the form of a movie object to get results
+
+         try {
+            await this.connect();
+
+            // remove any null or empty string keys from the object
+            // only key value pairs passed are updated, the rest
+            // remain unchanged
+            const keys = Object.keys(movie)
+            const values = Object.values(movie)
+            let modifiedMovie = movie;
+
+            // loop through the values and remove the key from modifiedMovie
+            // if the value is falsy.
+            for(let i=keys.length; i>=0; i--){
+                if (!values[i]){
+                    let {[keys[i]]: unused, ...tempMovie} = modifiedMovie;
+                    modifiedMovie = tempMovie;
+                }
+            }
+
+            const data = await this.collection.find(modifiedMovie).toArray();
+            await this.close();
+            return(data);
+        } catch (error) {
+            console.log(error);
+        }
+
     }
 
 }
